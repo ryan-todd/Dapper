@@ -175,8 +175,14 @@ namespace Dapper.Contrib.Extensions
             {
                 var key = GetSingleKey<T>(nameof(Get));
                 var name = GetTableName(type);
+                var adapter = GetFormatter(connection);
 
-                sql = $"select * from {name} where {key.Name} = @id";
+                var sb = new StringBuilder();
+                sb.Append($"select * from {name} where ");
+                adapter.AppendColumnName(sb, key.Name);
+                sb.Append(" = @id");
+
+                sql = sb.ToString();
                 GetQueries[type.TypeHandle] = sql;
             }
 
@@ -1001,7 +1007,7 @@ public partial class PostgresAdapter : ISqlAdapter
                 if (!first)
                     sb.Append(", ");
                 first = false;
-                sb.Append(property.Name);
+                AppendColumnName(sb, property.Name);
             }
         }
 
@@ -1011,7 +1017,7 @@ public partial class PostgresAdapter : ISqlAdapter
         var id = 0;
         foreach (var p in propertyInfos)
         {
-            var value = ((IDictionary<string, object>)results[0])[p.Name.ToLower()];
+            var value = ((IDictionary<string, object>)results[0])[p.Name];
             p.SetValue(entityToInsert, value, null);
             if (id == 0)
                 id = Convert.ToInt32(value);
